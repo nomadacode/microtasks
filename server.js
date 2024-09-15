@@ -10,10 +10,12 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
+// Configurar CORS para permitir solo el dominio de tu frontend en Vercel
 app.use(cors({
-    origin: 'microtasks2024.vercel.app'  // Reemplaza con la URL de tu frontend en Vercel
+    origin: 'https://microtasks2024.vercel.app',  // Reemplaza con la URL de tu frontend
+    methods: 'GET,POST,PUT,DELETE',  // Métodos permitidos
+    allowedHeaders: 'Content-Type,Authorization'  // Encabezados permitidos
   }));
-
 app.post('/api/generate-subtasks', async (req, res) => {
     const { title, description } = req.body;
     console.log("Recibiendo solicitud con título:", title, "y descripción:", description);
