@@ -10,7 +10,9 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
-app.use(cors());
+app.use(cors({
+    origin: 'https://microtasks-lac.vercel.app/'  // Reemplaza con la URL de tu frontend en Vercel
+  }));
 
 app.post('/api/generate-subtasks', async (req, res) => {
     const { title, description } = req.body;
