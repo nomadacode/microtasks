@@ -7,7 +7,7 @@ const dotenv = require('dotenv');
 dotenv.config(); // Carga las variables del archivo .env
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 app.use(cors());
@@ -47,5 +47,5 @@ app.post('/api/generate-subtasks', async (req, res) => {
 
 
 app.listen(port, () => {
-    console.log(`Servidor funcionando en http://localhost:${port}`);
+    console.log(`Servidor funcionando en el puerto ${port}`);
 });
