@@ -1,0 +1,6 @@
+.env
+/node_modules
+readme.txt
+MicroTasks.code-workspace
+package-lock.json
+package.json

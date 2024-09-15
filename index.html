@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MicroTasks - Panel Principal</title>
+    <!-- Cargar Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet"> <!-- Archivo CSS externo -->
+</head>
+<body class="bg-gray-100 font-sans">
+    <div id="app">
+        <!-- Encabezado con el botón para abrir el modal de nueva tarea -->
+        <header class="bg-blue-600 text-white p-4">
+            <div class="container mx-auto flex justify-between items-center">
+                <h1 class="text-2xl font-bold">MicroTasks</h1>
+                <nav>
+                    <!-- Botón para abrir el modal de nueva tarea -->
+                    <button @click="toggleModalNewTask" class="bg-white text-blue-600 px-4 py-2 rounded-full hover:bg-blue-100 transition duration-300">Nueva Tarea</button>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Dashboard donde se mostrarán las tareas (cards) -->
+        <main class="container mx-auto mt-8 p-4">
+            <h2 class="text-3xl font-bold mb-6">Mis Tareas</h2>
+            <!-- Grid para mostrar las cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Mostrar cada tarea creada como una card -->
+                <div v-for="task in tasks" :key="task.id" class="bg-white rounded-lg shadow-md p-6 relative card-content task-card">
+                    <!-- Ícono de eliminar tarea en la esquina superior derecha -->
+                    <button @click.stop="deleteTask(task.id)" class="absolute top-2 right-2 delete-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+
+                    <!-- Título limitado a 2 líneas -->
+                    <h3 class="task-title">{{ task.title }}</h3>
+
+                    <!-- Descripción limitada a 300 caracteres -->
+                    <p class="truncate-description">{{ task.description.length > 300 ? task.description.slice(0, 300) + '...' : task.description }}</p>
+
+                    <!-- Barra de progreso -->
+                    <div class="progress-bar mb-4">
+                        <div class="flex justify-between text-sm text-gray-500 mb-1">
+                            <span>Progreso</span>
+                            <span>{{ task.progress }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="bg-blue-600 h-2.5 rounded-full" :style="{ width: task.progress + '%' }"></div>
+                        </div>
+                    </div>
+
+                    <!-- Botón Ver Detalles para abrir el modal -->
+                    <button @click="openTaskModal(task)" class="bg-blue-100 text-blue-600 px-4 py-2 rounded w-full text-center hover:bg-blue-200 transition duration-300">Ver Detalles</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Modal de Nueva Tarea -->
+        <div v-if="showNewTaskModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
+            <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
+                <h3 class="text-2xl font-bold mb-4">Nueva Tarea</h3>
+                <form @submit.prevent="sendToAI">
+                    <div class="mb-4">
+                        <label for="taskTitle" class="block text-gray-700 text-sm font-bold mb-2">Título de la tarea</label>
+                        <input v-model="newTask.title" type="text" id="taskTitle" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required="">
+                    </div>
+                    <div class="mb-4">
+                        <label for="taskDescription" class="block text-gray-700 text-sm font-bold mb-2">Descripción</label>
+                        <textarea v-model="newTask.description" id="taskDescription" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" rows="3" required=""></textarea>
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="button" @click="toggleModalNewTask" class="mr-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">Cancelar</button>
+                        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Crear Tarea</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal de Subtareas -->
+        <div v-if="showTaskModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50" @click.self="closeTaskModal">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl h-3/4 overflow-auto p-6">
+                <h3 class="text-2xl font-bold mb-4">{{ selectedTask.title }}</h3>
+                <p class="text-gray-600 mb-4">{{ selectedTask.description }}</p>
+                
+                <!-- Barra de progreso (modal) -->
+                <div class="mb-4">
+                    <div class="flex justify-between text-sm text-gray-500 mb-1">
+                        <span>Progreso</span>
+                        <span>{{ selectedTask.progress }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div class="bg-blue-600 h-2.5 rounded-full" :style="{ width: selectedTask.progress + '%' }"></div>
+                    </div>
+                </div>
+
+                <!-- Subtareas existentes -->
+                <div v-for="(subtask, subtaskIndex) in selectedTask.subtasks" :key="subtaskIndex" class="subtask-card">
+                    <div class="subtask-actions">
+                        <!-- Modo edición de subtarea -->
+                        <div v-if="editingSubtaskIndex === subtaskIndex" class="flex items-start mb-2">
+                            <input v-model="editedSubtaskTitle" @blur="saveEditedSubtask(subtaskIndex)" @keyup.enter="saveEditedSubtask(subtaskIndex)" type="text" class="mr-2 border rounded p-2 w-full">
+                        </div>
+
+                        <!-- Vista normal de subtarea -->
+                        <div v-else class="flex items-start mb-2">
+                            <input type="checkbox" class="mr-2" v-model="subtask.completed" @click="updateProgress(subtask, 'subtask')">
+                            <div class="subtask-title" @click="editSubtask(subtaskIndex)">
+                                {{ subtask.title }}
+                            </div>
+                        </div>
+                        
+                        <button @click="deleteSubtask(subtaskIndex)" class="text-red-500 hover:text-red-700 text-sm ml-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Sub-subtareas -->
+                    <ul v-if="subtask.subsubtasks && subtask.subsubtasks.length > 0">
+                        <li v-for="(subsubtask, subsubtaskIndex) in subtask.subsubtasks" :key="subsubtaskIndex" class="flex items-center mb-2">
+                            <input type="checkbox" v-model="subsubtask.completed" @click="updateProgress(subsubtask, 'subsubtask', subtask)" class="mr-2">
+                            <span>{{ subsubtask.title }}</span>
+                            <!-- Botón para eliminar sub-subtarea alineado a la derecha -->
+                            <button @click="deleteSubsubtask(subtaskIndex, subsubtaskIndex)" class="ml-auto text-red-500 hover:text-red-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </li>
+                    </ul>
+
+                    <!-- Campo para agregar una nueva sub-subtarea -->
+                    <div v-if="newSubsubtaskIndex === subtaskIndex" class="flex items-center justify-between mt-2">
+                        <input v-model="newSubsubtaskTitle" type="text" placeholder="Nueva Sub-subtarea" class="border border-gray-300 rounded p-2 w-full mr-2">
+                        <button @click="saveSubsubtask(subtaskIndex)" class="text-blue-500 hover:text-blue-700">Guardar</button>
+                        <!-- Botón para cancelar la creación de la subtarea -->
+                        <button @click="newSubsubtaskIndex = null" class="text-gray-500 hover:text-gray-700 ml-2">Cancelar</button>
+                    </div>
+
+                    <!-- Botón para agregar sub-subtarea -->
+                    <button v-if="newSubsubtaskIndex !== subtaskIndex" @click="addSubsubtask(subtaskIndex)" class="text-blue-500 hover:text-blue-700 text-sm mt-2">+ Agregar Sub-subtarea</button>
+                </div>
+
+                <!-- Agregar nueva subtarea -->
+                <div v-if="isAddingSubtask" class="mt-4">
+                    <input v-model="newSubtaskTitle" type="text" placeholder="Nombre de la nueva subtarea" class="border border-gray-300 rounded p-2 w-full">
+                    <button @click="saveSubtask" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-2">Guardar Subtarea</button>
+                    <button @click="cancelAddSubtask" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded mt-2">Cancelar</button>
+                </div>
+
+                <!-- Botón para agregar nueva subtarea -->
+                <button v-if="!isAddingSubtask" @click="addSubtask" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4">Agregar Subtarea</button>
+
+                <button @click="closeTaskModal" class="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white text-center py-4 mt-8">
+        <p>© <span id="currentYear"></span> MicroTasks. Todos los derechos reservados.</p>
+    </footer>
+
+    <!-- Cargar Vue.js y el archivo externo de JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

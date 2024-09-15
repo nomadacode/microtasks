@@ -1,0 +1,138 @@
+[v-cloak] { display: none; }
+
+.task-card {
+    transition: all 0.3s ease;
+    min-height: 320px; /* Altura mínima para asegurar uniformidad en las cards */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding-bottom: 16px;
+}
+
+.task-card:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Título limitado a 2 líneas */
+.task-title {
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Limita el título a 2 líneas */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+/* Descripción limitada a 300 caracteres */
+.truncate-description {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    display: block;
+    margin-bottom: 16px; /* Añadido espacio para la descripción */
+}
+
+/* Para alinear el contenido de la card */
+.card-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+}
+
+/* Barra de progreso */
+.progress-bar {
+    margin-top: auto; /* Mantener la barra hacia abajo */
+}
+
+.delete-icon {
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.delete-icon:hover {
+    color: red;
+}
+
+.modal-content {
+    max-height: 90vh; /* Define el tamaño máximo del modal */
+    width: 100%;
+    overflow: hidden; /* Evita que el modal crezca más de lo necesario */
+}
+
+.modal-body {
+    max-height: 400px; /* Altura máxima del contenido para mostrar el scroll */
+    overflow-y: auto; /* Habilita el scroll vertical */
+    padding-right: 10px; /* Añade un pequeño padding para evitar que el scroll tape el contenido */
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+#app {
+    flex: 1; /* Esto asegura que el contenido principal ocupe todo el espacio posible */
+}
+
+footer {
+    position: relative;
+    width: 100%;
+    bottom: 0;
+}
+
+.subtask-card {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: transform 0.3s ease;
+}
+
+.subtask-card:hover {
+    transform: translateY(-5px);
+}
+
+.subtask-title {
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-bottom: 8px;
+}
+
+.subtask-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.subtask-actions button {
+    background-color: transparent;
+    border: none;
+    color: red;
+    cursor: pointer;
+}
+
+.subtask-actions button:hover {
+    color: darkred;
+}
+
+.subtask-card ul li {
+    padding: 8px 0;
+}
+
+.subtask-card button {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.subtask-card button:hover {
+    color: red;
+}
+
