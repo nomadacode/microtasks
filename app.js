@@ -43,8 +43,10 @@ new Vue({
 
         // Enviar la tarea a la API de OpenAI
         sendToAI() {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'; // Usar variable de entorno o localhost
+
             if (this.newTask.title && this.newTask.description) {
-                axios.post('https://microtasks-backend.onrender.coma/api/generate-subtasks', {
+                axios.post(`${apiUrl}/api/generate-subtasks`, {
                     title: this.newTask.title,
                     description: this.newTask.description
                 })
