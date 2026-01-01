@@ -27,7 +27,7 @@ app.post('/api/generate-subtasks', async (req, res) => {
                 model: 'gpt-3.5-turbo',
                 messages: [
                     { role: 'system', content: 'Eres un asistente que ayuda a descomponer tareas en subtareas y sub-subtareas.' },
-                    { role: 'user', content: `Genera una lista de **4 subtareas** con **4 sub-subtareas** para completar la siguiente tarea: "${title}". Descripción: "${description}". No hagas introducciones, explicaciones o conclusiones` }
+                    { role: 'user', content: `Si el título o la descripción no son claros o están incompletos, responde únicamente con el prefijo "NECESITO_MAS_DETALLES:" seguido de una breve solicitud de aclaración. Si son claros, genera una lista de **4 subtareas** con **4 sub-subtareas** para completar la siguiente tarea: "${title}". Descripción: "${description}". No hagas introducciones, explicaciones o conclusiones.` }
                 ],
                 max_tokens: 500, // Aumentar la cantidad de tokens
                 temperature: 0.7

@@ -46,12 +46,36 @@ new Vue({
         // Enviar la tarea a la API de OpenAI
         sendToAI() {
             const apiUrl = 'https://microtasks-backend.onrender.com'; // Cambia esto por la URL de tu backend en Render
+            const needsMoreDetailsPrefix = 'NECESITO_MAS_DETALLES:';
+            const invalidTerms = new Set(['x', 'xx', 'ok', 'aa', 'bb', 'cc']);
+            const minTitleLength = 3;
+            const minDescriptionLength = 15;
+            const minDescriptionWords = 4;
+            const countWords = (text) => text.split(/\s+/).filter(Boolean).length;
+            const isInvalidContent = (text) => {
+                const normalized = text.toLowerCase();
+                if (invalidTerms.has(normalized)) {
+                    return true;
+                }
+                const words = normalized.split(/\s+/).filter(Boolean);
+                return words.length > 0 && words.every(word => word.length <= 2);
+            };
 
             const title = this.newTask.title.trim();
             const description = this.newTask.description.trim();
 
             if (!title || !description) {
                 this.formError = 'Por favor completa el título y la descripción.';
+                return;
+            }
+
+            if (title.length < minTitleLength || isInvalidContent(title)) {
+                this.formError = 'El título debe tener más detalles (mínimo 3 caracteres y evitar términos inválidos).';
+                return;
+            }
+
+            if (description.length < minDescriptionLength || countWords(description) < minDescriptionWords || isInvalidContent(description)) {
+                this.formError = 'La descripción debe incluir más detalles (mínimo 15 caracteres, 4 palabras y sin términos inválidos).';
                 return;
             }
 
@@ -73,7 +97,16 @@ new Vue({
                     description
                 })
                 .then(response => {
-                    const subtasks = this.parseGPTResponse(response.data.subtasks);
+                    const subtasksPayload = response.data.subtasks;
+                    const markerCandidate = Array.isArray(subtasksPayload) ? subtasksPayload[0] : subtasksPayload;
+                    const markerText = typeof markerCandidate === 'string' ? markerCandidate.trim() : '';
+
+                    if (markerText.startsWith(needsMoreDetailsPrefix)) {
+                        this.formError = 'Necesitamos más detalles para generar subtareas. Por favor amplía el título o la descripción.';
+                        return;
+                    }
+
+                    const subtasks = this.parseGPTResponse(subtasksPayload);
                     
                     // Aplicamos la limpieza de texto SOLO al título de las sub-subtareas
                     subtasks.forEach(subtask => {
