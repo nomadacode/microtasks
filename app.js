@@ -90,6 +90,10 @@ new Vue({
             const subtasks = [];
             let currentSubtask = null;
 
+            const subtaskPattern = /^\d+[\.)]\s+/; // "1." o "1)"
+            const subsubtaskNumberedPattern = /^\d+\.\d+\s+/; // "1.1"
+            const bulletPattern = /^[-•*]\s+/; // "-", "•", "*"
+
             subtasksArray.forEach(line => {
                 line = line.trim();
                 if (line === '') {
@@ -97,26 +101,48 @@ new Vue({
                     return;
                 }
                 // Detectar subtareas principales (ej: "1. Investigar mercado argentino")
-                if (/^\d+\.\s+/.test(line)) {
+                if (subtaskPattern.test(line)) {
+                    const title = line.replace(subtaskPattern, '').trim();
+                    if (!title) {
+                        return;
+                    }
                     if (currentSubtask) {
                         subtasks.push(currentSubtask);
                     }
                     currentSubtask = {
-                        title: line.replace(/^\d+\.\s+/, ''), // Remover el número y punto
+                        title,
                         description: '',
                         completed: false,
                         subsubtasks: []
                     };
                 }
-                // Detectar sub-subtareas (ej: "- Analizar competencia")
-                else if (/^- /.test(line)) {
+                // Detectar sub-subtareas enumeradas (ej: "1.1 Analizar competencia")
+                else if (subsubtaskNumberedPattern.test(line)) {
                     if (currentSubtask) {
+                        const title = line.replace(subsubtaskNumberedPattern, '').trim();
+                        if (!title) {
+                            return;
+                        }
                         currentSubtask.subsubtasks.push({
-                            title: line.replace(/^- /, ''), // Remover el guion
+                            title,
                             completed: false
                         });
                     }
                 }
+                // Detectar sub-subtareas con viñetas (ej: "- Analizar competencia")
+                else if (bulletPattern.test(line)) {
+                    if (currentSubtask) {
+                        const title = line.replace(bulletPattern, '').trim();
+                        if (!title) {
+                            return;
+                        }
+                        currentSubtask.subsubtasks.push({
+                            title,
+                            completed: false
+                        });
+                    }
+                }
+                // Ignorar líneas de ruido u otros formatos
             });
 
             if (currentSubtask) {
