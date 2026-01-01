@@ -10,6 +10,7 @@ new Vue({
             showNewTaskModal: false,
             showTaskModal: false,
             formError: '',
+            isLoading: false,
             // Añadimos estas propiedades para manejar nuevas sub-subtareas
             newSubsubtaskIndex: null,
             newSubsubtaskTitle: '',
@@ -45,6 +46,7 @@ new Vue({
 
         // Enviar la tarea a la API de OpenAI
         sendToAI() {
+            this.isLoading = true;
             const apiUrl = 'https://microtasks-backend.onrender.com'; // Cambia esto por la URL de tu backend en Render
             const needsMoreDetailsPrefix = 'NECESITO_MAS_DETALLES:';
             const invalidTerms = new Set(['x', 'xx', 'ok', 'aa', 'bb', 'cc']);
@@ -66,26 +68,31 @@ new Vue({
 
             if (!title || !description) {
                 this.formError = 'Por favor completa el título y la descripción.';
+                this.isLoading = false;
                 return;
             }
 
             if (title.length < minTitleLength || isInvalidContent(title)) {
                 this.formError = 'El título debe tener más detalles (mínimo 3 caracteres y evitar términos inválidos).';
+                this.isLoading = false;
                 return;
             }
 
             if (description.length < minDescriptionLength || countWords(description) < minDescriptionWords || isInvalidContent(description)) {
                 this.formError = 'La descripción debe incluir más detalles (mínimo 15 caracteres, 4 palabras y sin términos inválidos).';
+                this.isLoading = false;
                 return;
             }
 
             if (title.length > 100) {
                 this.formError = 'El título debe tener 100 caracteres o menos.';
+                this.isLoading = false;
                 return;
             }
 
             if (description.length > 500) {
                 this.formError = 'La descripción debe tener 500 caracteres o menos.';
+                this.isLoading = false;
                 return;
             }
 
@@ -136,6 +143,9 @@ new Vue({
                 })
                 .catch(error => {
                     console.error("Error al generar subtareas:", error.response ? error.response.data : error.message);
+                })
+                .finally(() => {
+                    this.isLoading = false;
                 });
             }
         },

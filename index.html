@@ -74,7 +74,7 @@
                     </div>
                     <div class="flex justify-end">
                         <button type="button" @click="toggleModalNewTask" class="mr-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">Cancelar</button>
-                        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Crear Tarea</button>
+                        <button type="submit" class="submit-button bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" :disabled="isLoading">{{ isLoading ? 'Generando subtareas…' : 'Crear Tarea' }}</button>
                     </div>
                 </form>
             </div>
