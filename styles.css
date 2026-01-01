@@ -136,3 +136,8 @@ footer {
     color: red;
 }
 
+.form-error {
+    color: #b91c1c;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
