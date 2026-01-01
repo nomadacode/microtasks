@@ -9,6 +9,7 @@ new Vue({
             },
             showNewTaskModal: false,
             showTaskModal: false,
+            formError: '',
             // Añadimos estas propiedades para manejar nuevas sub-subtareas
             newSubsubtaskIndex: null,
             newSubsubtaskTitle: '',
@@ -20,6 +21,7 @@ new Vue({
         // Función para abrir/cerrar el modal de Nueva Tarea
         toggleModalNewTask() {
             this.showNewTaskModal = !this.showNewTaskModal;
+            this.formError = '';
         },
 
         // Función para abrir el modal de Subtareas de una tarea seleccionada
@@ -45,11 +47,30 @@ new Vue({
         sendToAI() {
             const apiUrl = 'https://microtasks-backend.onrender.com'; // Cambia esto por la URL de tu backend en Render
 
+            const title = this.newTask.title.trim();
+            const description = this.newTask.description.trim();
 
-            if (this.newTask.title && this.newTask.description) {
+            if (!title || !description) {
+                this.formError = 'Por favor completa el título y la descripción.';
+                return;
+            }
+
+            if (title.length > 100) {
+                this.formError = 'El título debe tener 100 caracteres o menos.';
+                return;
+            }
+
+            if (description.length > 500) {
+                this.formError = 'La descripción debe tener 500 caracteres o menos.';
+                return;
+            }
+
+            this.formError = '';
+
+            if (title && description) {
                 axios.post(`${apiUrl}/api/generate-subtasks`, {
-                    title: this.newTask.title,
-                    description: this.newTask.description
+                    title,
+                    description
                 })
                 .then(response => {
                     const subtasks = this.parseGPTResponse(response.data.subtasks);
@@ -66,8 +87,8 @@ new Vue({
 
                     this.tasks.push({
                         id: Date.now(),
-                        title: this.newTask.title,
-                        description: this.newTask.description,
+                        title,
+                        description,
                         subtasks: subtasks,
                         progress: 0
                     });
@@ -78,6 +99,7 @@ new Vue({
                     // Restablece el formulario
                     this.newTask.title = '';
                     this.newTask.description = '';
+                    this.formError = '';
                 })
                 .catch(error => {
                     console.error("Error al generar subtareas:", error.response ? error.response.data : error.message);
