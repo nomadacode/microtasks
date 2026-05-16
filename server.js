@@ -10,18 +10,22 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000;
 
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000')
+const allowedOriginPatterns = (process.env.CORS_ORIGIN || 'http://localhost:3000')
     .split(',')
     .map(origin => origin.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .map(pattern => {
+        const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
+        return new RegExp(`^${escaped}$`);
+    });
 
 app.use(bodyParser.json({ limit: '16kb' }));
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
+        if (!origin || allowedOriginPatterns.some(re => re.test(origin))) {
             return callback(null, true);
         }
-        return callback(new Error(`Origen no permitido: ${origin}`));
+        return callback(null, false);
     },
     methods: 'GET,POST,PUT,DELETE',
     allowedHeaders: 'Content-Type,Authorization'
