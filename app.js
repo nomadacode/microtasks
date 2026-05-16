@@ -7,15 +7,17 @@ new Vue({
                 title: '',
                 description: ''
             },
+            selectedTask: null,
             showNewTaskModal: false,
             showTaskModal: false,
             formError: '',
             isLoading: false,
-            // Añadimos estas propiedades para manejar nuevas sub-subtareas
             newSubsubtaskIndex: null,
             newSubsubtaskTitle: '',
-            editingSubtaskIndex: null,  // NUEVA variable para almacenar la subtarea en edición
-            editedSubtaskTitle: ''      // NUEVA variable para almacenar temporalmente el nuevo título de la subtarea
+            editingSubtaskIndex: null,
+            editedSubtaskTitle: '',
+            isAddingSubtask: false,
+            newSubtaskTitle: ''
         };
     },
     methods: {
@@ -143,6 +145,7 @@ new Vue({
                 })
                 .catch(error => {
                     console.error("Error al generar subtareas:", error.response ? error.response.data : error.message);
+                    this.formError = 'No pudimos generar las subtareas. Verificá tu conexión e intentá de nuevo.';
                 })
                 .finally(() => {
                     this.isLoading = false;
@@ -219,9 +222,6 @@ new Vue({
 
         // Función para actualizar el progreso de la tarea al hacer clic en una subtarea o sub-subtarea
         updateProgress(item, type, parentSubtask = null) {
-            item.completed = !item.completed; // Cambiar el estado de completado del item
-        
-            // Si es una subtarea, marcar o desmarcar todas las sub-subtareas asociadas
             if (type === 'subtask' && item.subsubtasks) {
                 item.subsubtasks.forEach(subsubtask => {
                     subsubtask.completed = item.completed;
@@ -257,8 +257,7 @@ new Vue({
                     }
                 });
 
-                // Calcular el porcentaje de progreso total
-                const progress = (completedItems / totalItems) * 100;
+                const progress = totalItems === 0 ? 0 : (completedItems / totalItems) * 100;
                 this.selectedTask.progress = Math.round(progress);
             }
         },
@@ -268,14 +267,29 @@ new Vue({
             this.tasks = this.tasks.filter(task => task.id !== taskId);
         },
 
-        // Función para agregar una subtarea
         addSubtask() {
+            this.isAddingSubtask = true;
+            this.newSubtaskTitle = '';
+        },
+
+        saveSubtask() {
+            const title = this.newSubtaskTitle.trim();
+            if (!title) {
+                return;
+            }
             this.selectedTask.subtasks.push({
-                title: 'Nueva Subtarea',
+                title,
                 description: '',
                 completed: false,
                 subsubtasks: []
             });
+            this.cancelAddSubtask();
+            this.calculateTaskProgress();
+        },
+
+        cancelAddSubtask() {
+            this.isAddingSubtask = false;
+            this.newSubtaskTitle = '';
         },
 
         // Función para agregar una sub-subtarea

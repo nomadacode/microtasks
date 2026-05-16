@@ -107,7 +107,7 @@
 
                         <!-- Vista normal de subtarea -->
                         <div v-else class="flex items-start mb-2">
-                            <input type="checkbox" class="mr-2" v-model="subtask.completed" @click="updateProgress(subtask, 'subtask')">
+                            <input type="checkbox" class="mr-2" v-model="subtask.completed" @change="updateProgress(subtask, 'subtask')">
                             <div class="subtask-title" @click="editSubtask(subtaskIndex)">
                                 {{ subtask.title }}
                             </div>
@@ -123,7 +123,7 @@
                     <!-- Sub-subtareas -->
                     <ul v-if="subtask.subsubtasks && subtask.subsubtasks.length > 0">
                         <li v-for="(subsubtask, subsubtaskIndex) in subtask.subsubtasks" :key="subsubtaskIndex" class="flex items-center mb-2">
-                            <input type="checkbox" v-model="subsubtask.completed" @click="updateProgress(subsubtask, 'subsubtask', subtask)" class="mr-2">
+                            <input type="checkbox" v-model="subsubtask.completed" @change="updateProgress(subsubtask, 'subsubtask', subtask)" class="mr-2">
                             <span>{{ subsubtask.title }}</span>
                             <!-- Botón para eliminar sub-subtarea alineado a la derecha -->
                             <button @click="deleteSubsubtask(subtaskIndex, subsubtaskIndex)" class="ml-auto text-red-500 hover:text-red-700">
