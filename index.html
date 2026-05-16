@@ -101,8 +101,10 @@
                 <div v-for="(subtask, subtaskIndex) in selectedTask.subtasks" :key="subtaskIndex" class="subtask-card">
                     <div class="subtask-actions">
                         <!-- Modo edición de subtarea -->
-                        <div v-if="editingSubtaskIndex === subtaskIndex" class="flex items-start mb-2">
-                            <input v-model="editedSubtaskTitle" @blur="saveEditedSubtask(subtaskIndex)" @keyup.enter="saveEditedSubtask(subtaskIndex)" type="text" class="mr-2 border rounded p-2 w-full">
+                        <div v-if="editingSubtaskIndex === subtaskIndex" class="flex items-center mb-2 w-full">
+                            <input v-model="editedSubtaskTitle" @keyup.enter="saveEditedSubtask(subtaskIndex)" @keyup.esc="cancelEditSubtask" type="text" class="mr-2 border rounded p-2 flex-1" ref="editSubtaskInput">
+                            <button @click="saveEditedSubtask(subtaskIndex)" class="text-blue-500 hover:text-blue-700 text-sm mr-2">Guardar</button>
+                            <button @click="cancelEditSubtask" class="text-gray-500 hover:text-gray-700 text-sm">Cancelar</button>
                         </div>
 
                         <!-- Vista normal de subtarea -->
