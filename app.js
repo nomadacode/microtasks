@@ -63,15 +63,16 @@ new Vue({
             this.newSubsubtaskTitle = '';
         },
 
-        sendToAI() {
-            this.isLoading = true;
-            const apiUrl = 'https://microtasks-backend.onrender.com';
+        validateNewTask(title, description) {
             const invalidTerms = new Set(['x', 'xx', 'ok', 'aa', 'bb', 'cc']);
             const minTitleLength = 3;
             const minDescriptionLength = 15;
             const minDescriptionWords = 4;
-            const countWords = (text) => text.split(/\s+/).filter(Boolean).length;
-            const isInvalidContent = (text) => {
+            const maxTitleLength = 100;
+            const maxDescriptionLength = 500;
+
+            const countWords = text => text.split(/\s+/).filter(Boolean).length;
+            const isInvalidContent = text => {
                 const normalized = text.toLowerCase();
                 if (invalidTerms.has(normalized)) {
                     return true;
@@ -80,43 +81,39 @@ new Vue({
                 return words.length > 0 && words.every(word => word.length <= 2);
             };
 
+            if (!title || !description) {
+                return 'Por favor completa el título y la descripción.';
+            }
+            if (title.length < minTitleLength || isInvalidContent(title)) {
+                return 'El título debe tener más detalles (mínimo 3 caracteres y evitar términos inválidos).';
+            }
+            if (description.length < minDescriptionLength || countWords(description) < minDescriptionWords || isInvalidContent(description)) {
+                return 'La descripción debe incluir más detalles (mínimo 15 caracteres, 4 palabras y sin términos inválidos).';
+            }
+            if (title.length > maxTitleLength) {
+                return `El título debe tener ${maxTitleLength} caracteres o menos.`;
+            }
+            if (description.length > maxDescriptionLength) {
+                return `La descripción debe tener ${maxDescriptionLength} caracteres o menos.`;
+            }
+            return null;
+        },
+
+        sendToAI() {
+            const apiUrl = 'https://microtasks-backend.onrender.com';
             const title = this.newTask.title.trim();
             const description = this.newTask.description.trim();
 
-            if (!title || !description) {
-                this.formError = 'Por favor completa el título y la descripción.';
-                this.isLoading = false;
-                return;
-            }
-
-            if (title.length < minTitleLength || isInvalidContent(title)) {
-                this.formError = 'El título debe tener más detalles (mínimo 3 caracteres y evitar términos inválidos).';
-                this.isLoading = false;
-                return;
-            }
-
-            if (description.length < minDescriptionLength || countWords(description) < minDescriptionWords || isInvalidContent(description)) {
-                this.formError = 'La descripción debe incluir más detalles (mínimo 15 caracteres, 4 palabras y sin términos inválidos).';
-                this.isLoading = false;
-                return;
-            }
-
-            if (title.length > 100) {
-                this.formError = 'El título debe tener 100 caracteres o menos.';
-                this.isLoading = false;
-                return;
-            }
-
-            if (description.length > 500) {
-                this.formError = 'La descripción debe tener 500 caracteres o menos.';
-                this.isLoading = false;
+            const validationError = this.validateNewTask(title, description);
+            if (validationError) {
+                this.formError = validationError;
                 return;
             }
 
             this.formError = '';
+            this.isLoading = true;
 
-            if (title && description) {
-                axios.post(`${apiUrl}/api/generate-subtasks`, {
+            axios.post(`${apiUrl}/api/generate-subtasks`, {
                     title,
                     description
                 })
@@ -156,7 +153,6 @@ new Vue({
                 .finally(() => {
                     this.isLoading = false;
                 });
-            }
         },
 
         normalizeSubtasks(rawSubtasks) {
@@ -219,9 +215,13 @@ new Vue({
             }
         },
 
-        // Función para eliminar una tarea
         deleteTask(taskId) {
-            this.tasks = this.tasks.filter(task => task.id !== taskId);
+            const task = this.tasks.find(t => t.id === taskId);
+            const label = task ? `"${task.title}"` : 'esta tarea';
+            if (!window.confirm(`¿Eliminar ${label}? Esta acción no se puede deshacer.`)) {
+                return;
+            }
+            this.tasks = this.tasks.filter(t => t.id !== taskId);
         },
 
         addSubtask() {
@@ -268,14 +268,22 @@ new Vue({
             }
         },
 
-        // Función para eliminar una subtarea
         deleteSubtask(subtaskIndex) {
+            const subtask = this.selectedTask.subtasks[subtaskIndex];
+            const label = subtask ? `"${subtask.title}"` : 'esta subtarea';
+            if (!window.confirm(`¿Eliminar ${label}?`)) {
+                return;
+            }
             this.selectedTask.subtasks.splice(subtaskIndex, 1);
             this.calculateTaskProgress();
         },
 
-        // Función para eliminar una sub-subtarea
         deleteSubsubtask(subtaskIndex, subsubtaskIndex) {
+            const subsubtask = this.selectedTask.subtasks[subtaskIndex]?.subsubtasks[subsubtaskIndex];
+            const label = subsubtask ? `"${subsubtask.title}"` : 'esta sub-subtarea';
+            if (!window.confirm(`¿Eliminar ${label}?`)) {
+                return;
+            }
             this.selectedTask.subtasks[subtaskIndex].subsubtasks.splice(subsubtaskIndex, 1);
             this.calculateTaskProgress();
         },
