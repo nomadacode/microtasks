@@ -73,7 +73,8 @@ app.post('/api/generate-subtasks', generateLimiter, async (req, res) => {
     const systemPrompt = 'Eres un asistente que descompone tareas en subtareas y sub-subtareas. Responde siempre en JSON válido siguiendo el esquema solicitado, sin texto adicional.';
     const userPrompt = `Tarea: "${title}". Descripción: "${description}".\n\n` +
         `Si el título o la descripción son ambiguos o están incompletos, respondé exactamente: {"needs_more_details": true, "message": "<breve aclaración solicitada>"}.\n` +
-        `Si son claros, respondé con: {"needs_more_details": false, "subtasks": [{"title": "...", "subsubtasks": [{"title": "..."}, ...]}, ...]} con exactamente 4 subtareas y 4 sub-subtareas cada una.`;
+        `Si son claros, respondé con: {"needs_more_details": false, "subtasks": [{"title": "...", "subsubtasks": [{"title": "..."}, ...]}, ...]}.\n` +
+        `Generá la cantidad de subtareas y sub-subtareas que la tarea realmente requiera (entre 2 y 8 de cada nivel, según convenga). No fuerces un número fijo: tareas simples pueden tener pocas subtareas, tareas complejas más. Evitá repetir o inflar pasos para llegar a un número.`;
 
     try {
         const response = await axios.post(
