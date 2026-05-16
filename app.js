@@ -1,5 +1,27 @@
 new Vue({
     el: '#app',
+    created() {
+        try {
+            const stored = localStorage.getItem('microtasks.tasks');
+            if (stored) {
+                this.tasks = JSON.parse(stored);
+            }
+        } catch (error) {
+            console.warn('No se pudo restaurar el estado guardado:', error);
+        }
+    },
+    watch: {
+        tasks: {
+            deep: true,
+            handler(value) {
+                try {
+                    localStorage.setItem('microtasks.tasks', JSON.stringify(value));
+                } catch (error) {
+                    console.warn('No se pudo persistir el estado:', error);
+                }
+            }
+        }
+    },
     data() {
         return {
             tasks: [],
