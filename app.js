@@ -63,16 +63,9 @@ new Vue({
             this.newSubsubtaskTitle = '';
         },
 
-        // Función para limpiar el prefijo de sub-subtareas
-        cleanSubtaskText(subtaskText) {
-            return subtaskText.replace(/Sub-subtarea \d+:\s*/, '').trim();
-        },
-
-        // Enviar la tarea a la API de OpenAI
         sendToAI() {
             this.isLoading = true;
-            const apiUrl = 'https://microtasks-backend.onrender.com'; // Cambia esto por la URL de tu backend en Render
-            const needsMoreDetailsPrefix = 'NECESITO_MAS_DETALLES:';
+            const apiUrl = 'https://microtasks-backend.onrender.com';
             const invalidTerms = new Set(['x', 'xx', 'ok', 'aa', 'bb', 'cc']);
             const minTitleLength = 3;
             const minDescriptionLength = 15;
@@ -128,39 +121,30 @@ new Vue({
                     description
                 })
                 .then(response => {
-                    const subtasksPayload = response.data.subtasks;
-                    const markerCandidate = Array.isArray(subtasksPayload) ? subtasksPayload[0] : subtasksPayload;
-                    const markerText = typeof markerCandidate === 'string' ? markerCandidate.trim() : '';
+                    const payload = response.data || {};
 
-                    if (markerText.startsWith(needsMoreDetailsPrefix)) {
-                        this.formError = 'Necesitamos más detalles para generar subtareas. Por favor amplía el título o la descripción.';
+                    if (payload.needs_more_details) {
+                        this.formError = payload.message
+                            ? `Necesitamos más detalles: ${payload.message}`
+                            : 'Necesitamos más detalles para generar subtareas. Por favor amplía el título o la descripción.';
                         return;
                     }
 
-                    const subtasks = this.parseGPTResponse(subtasksPayload);
-                    
-                    // Aplicamos la limpieza de texto SOLO al título de las sub-subtareas
-                    subtasks.forEach(subtask => {
-                        if (subtask.subsubtasks) {
-                            subtask.subsubtasks = subtask.subsubtasks.map(subsubtask => ({
-                                ...subsubtask, // Mantenemos el resto del objeto intacto
-                                title: this.cleanSubtaskText(subsubtask.title) // Limpiamos solo el título
-                            }));
-                        }
-                    });
+                    const subtasks = this.normalizeSubtasks(payload.subtasks);
+                    if (subtasks.length === 0) {
+                        this.formError = 'No pudimos interpretar la respuesta. Probá de nuevo.';
+                        return;
+                    }
 
                     this.tasks.push({
                         id: Date.now(),
                         title,
                         description,
-                        subtasks: subtasks,
+                        subtasks,
                         progress: 0
                     });
-            
-                    // Cierra el modal de nueva tarea
-                    this.toggleModalNewTask(); 
-            
-                    // Restablece el formulario
+
+                    this.toggleModalNewTask();
                     this.newTask.title = '';
                     this.newTask.description = '';
                     this.formError = '';
@@ -175,71 +159,22 @@ new Vue({
             }
         },
 
-        // Función para parsear la respuesta de GPT y organizar subtareas/sub-subtareas
-        parseGPTResponse(subtasksArray) {
-            const subtasks = [];
-            let currentSubtask = null;
-
-            const subtaskPattern = /^\d+[\.)]\s+/; // "1." o "1)"
-            const subsubtaskNumberedPattern = /^\d+\.\d+\s+/; // "1.1"
-            const bulletPattern = /^[-•*]\s+/; // "-", "•", "*"
-
-            subtasksArray.forEach(line => {
-                line = line.trim();
-                if (line === '') {
-                    // Ignorar líneas vacías
-                    return;
-                }
-                // Detectar subtareas principales (ej: "1. Investigar mercado argentino")
-                if (subtaskPattern.test(line)) {
-                    const title = line.replace(subtaskPattern, '').trim();
-                    if (!title) {
-                        return;
-                    }
-                    if (currentSubtask) {
-                        subtasks.push(currentSubtask);
-                    }
-                    currentSubtask = {
-                        title,
-                        description: '',
-                        completed: false,
-                        subsubtasks: []
-                    };
-                }
-                // Detectar sub-subtareas enumeradas (ej: "1.1 Analizar competencia")
-                else if (subsubtaskNumberedPattern.test(line)) {
-                    if (currentSubtask) {
-                        const title = line.replace(subsubtaskNumberedPattern, '').trim();
-                        if (!title) {
-                            return;
-                        }
-                        currentSubtask.subsubtasks.push({
-                            title,
-                            completed: false
-                        });
-                    }
-                }
-                // Detectar sub-subtareas con viñetas (ej: "- Analizar competencia")
-                else if (bulletPattern.test(line)) {
-                    if (currentSubtask) {
-                        const title = line.replace(bulletPattern, '').trim();
-                        if (!title) {
-                            return;
-                        }
-                        currentSubtask.subsubtasks.push({
-                            title,
-                            completed: false
-                        });
-                    }
-                }
-                // Ignorar líneas de ruido u otros formatos
-            });
-
-            if (currentSubtask) {
-                subtasks.push(currentSubtask);
+        normalizeSubtasks(rawSubtasks) {
+            if (!Array.isArray(rawSubtasks)) {
+                return [];
             }
-
-            return subtasks;
+            return rawSubtasks
+                .filter(item => item && typeof item.title === 'string' && item.title.trim())
+                .map(item => ({
+                    title: item.title.trim(),
+                    description: '',
+                    completed: false,
+                    subsubtasks: Array.isArray(item.subsubtasks)
+                        ? item.subsubtasks
+                            .filter(sub => sub && typeof sub.title === 'string' && sub.title.trim())
+                            .map(sub => ({ title: sub.title.trim(), completed: false }))
+                        : []
+                }));
         },
 
         // Función para actualizar el progreso de la tarea al hacer clic en una subtarea o sub-subtarea
